@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Tomar Foto - UPT</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <style>
+        video, canvas, img.preview {
+            width: 320px;
+            height: 240px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+        .hidden { display: none; }
+        .button-group { margin-top: 10px; }
+    </style>
+</head>
+<body>
+<header class="navbar innovated-navbar">
+    <div class="navbar-left">
+        <img src="{{ url_for('static', filename='logo-uptecamac.png') }}" alt="Logo UPT" class="logo" />
+        <span class="navbar-title">Universidad Politécnica de Tecámac</span>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Inicio</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <div id="cam-status" class="cam-status cam-status-inicial">Cámara: <span id="cam-status-text">Cargando...</span></div>
+    <section class="foto-hero">
+        <div class="foto-hero-content">
+            <img src="{{ url_for('static', filename='logo-uptecamac.png') }}" alt="Logo UPT" class="foto-hero-logo" />
+            <div>
+                <h1 class="foto-hero-title">Toma tu Foto para la Credencial</h1>
+                <p class="foto-hero-desc">¡Este es el paso final para ser parte de la UPT!<br>Tu credencial es tu identidad universitaria.<br><b>Sigue cuidadosamente las instrucciones para obtener una foto profesional y válida.</b></p>
+            </div>
+        </div>
+    </section>
+    <section class="foto-instrucciones">
+        <h2>Instrucciones para una foto perfecta</h2>
+        <ul class="foto-lista">
+            <li>Colócate frente a un <b>fondo blanco</b> y bien iluminado.</li>
+            <li>Evita sombras, gorras, lentes oscuros o accesorios que tapen tu rostro.</li>
+            <li>Mira de frente, con expresión neutra y rostro visible.</li>
+            <li>Utiliza una cámara funcional y limpia el lente antes de tomar la foto.</li>
+            <li>Ten a la mano tu <b>CURP</b> y <b>MATRÍCULA</b> para completar el proceso.</li>
+        </ul>
+        <div class="foto-alerta">
+            <span>⚠️</span> <b>Nota:</b> Si tu foto no cumple con los requisitos, será rechazada y deberás repetir el proceso.<br>
+            <span>💡</span> <b>Tip:</b> Puedes pedir ayuda a alguien para enfocar mejor la imagen.
+        </div>
+        <!-- Ayuda móvil debajo de las instrucciones, centrada -->
+        <div class="ayuda-movil" style="max-width:420px;margin:22px auto 0 auto;padding:14px 18px;background:#e3f2fd;border-radius:12px;color:#1565c0;font-size:1.07rem;box-shadow:0 2px 12px rgba(21,101,192,0.10);text-align:left;">
+            <b>¿No puedes usar la cámara en tu celular?</b><br>
+            - Permite el acceso a la cámara cuando el navegador lo solicite.<br>
+            - Usa Chrome, Safari o el navegador nativo.<br>
+            - Si tienes Android, prueba desde Chrome. Si tienes iPhone, usa Safari.<br>
+            - Si ves un mensaje de error, revisa los permisos en la configuración del navegador.<br>
+            - Si el problema persiste, prueba reiniciar el navegador o el dispositivo.<br>
+            - <b>Si nada funciona, puedes subir una foto desde la galería usando el botón de archivo.</b>
+        </div>
+    </section>
+    <section class="content foto-content">
+        {% if foto_bloqueada %}
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    mostrarModalFotoBloqueada();
+                });
+            </script>
+        {% else %}
+            <form id="fotoForm" method="POST" action="{{ url_for('tomar_foto') }}" enctype="multipart/form-data">
+                <label>CURP:</label>
+                <input type="text" name="curp" required maxlength="18" />
+                <label>Matrícula:</label>
+                <input type="text" name="matricula" required />
+                <div class="video-container" style="position:relative;">
+                    <video id="video" autoplay playsinline></video>
+                </div>
+                <canvas id="canvas" class="hidden"></canvas>
+                <input type="file" name="foto" id="fotoFile" class="hidden" />
+                <div id="preview-container" class="hidden">
+                    <h3>Vista previa:</h3>
+                    <img id="fotoPreview" class="preview" src="#" alt="Vista previa" />
+                    <div class="button-group">
+                        <button type="submit">✅ Subir Foto</button>
+                        <button type="button" id="btnCancelar">❌ Cancelar</button>
+                    </div>
+                </div>
+                <br/>
+                <button type="button" id="btnTomarFoto">📸 Tomar Foto</button>
+                <button type="button" id="btnSwitchCam" style="margin-left:10px;">🔄 Cambiar cámara</button>
+                <div style="margin:18px 0 8px 0;">
+                    <label for="fotoFile" style="font-weight:600;">O selecciona una foto desde tu galería:</label>
+                    <input type="file" name="foto" id="fotoFileManual" accept="image/*" capture="environment" style="display:block;margin-top:6px;" />
+                </div>
+            </form>
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <ul class="flash-messages">
+                  {% for message in messages %}
+                    <li>{{ message }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            {% endwith %}
+        {% endif %}
+    </section>
+</main>
+<style>
+.cam-status {
+    text-align: center;
+    margin: 10px 0 0 0;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #b71c1c;
+}
+.cam-status-ok { color: #388e3c; }
+.cam-status-error { color: #d32f2f; }
+.countdown {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    color: #fff;
+    background: rgba(183,28,28,0.8);
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+}
+.video-container { position: relative; display: inline-block; }
+.ayuda-btn {
+    background: #b71c1c;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 1rem;
+    margin-left: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.ayuda-btn:hover { background: #8f1414; }
+.ayuda-tooltip {
+    display: none;
+    position: absolute;
+    top: 40px;
+    left: 0;
+    background: #fff3e0;
+    color: #b71c1c;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(183,28,28,0.07);
+    padding: 12px 18px;
+    font-size: 1rem;
+    z-index: 100;
+    width: 320px;
+}
+.ayuda-btn:focus + .ayuda-tooltip, .ayuda-btn:hover + .ayuda-tooltip {
+    display: block;
+}
+.success-anim {
+    text-align: center;
+    color: #388e3c;
+    font-size: 1.3rem;
+    margin-top: 18px;
+    animation: fadeIn 1s;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.modal-foto-bloqueada {
+    position: fixed; z-index: 9999; left: 0; top: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center;
+    animation: fadeInModal 0.4s cubic-bezier(.4,0,.2,1);
+}
+.modal-foto-bloqueada-content {
+    background: #fff; border-radius: 22px; padding: 38px 28px 32px 28px; max-width: 420px; width: 90vw;
+    box-shadow: 0 12px 40px 0 rgba(25,118,210,0.18), 0 2px 8px rgba(0,0,0,0.10);
+    text-align: center; position: relative;
+    border: 2.5px solid #1976d2;
+    animation: popInModal 0.45s cubic-bezier(.4,0,.2,1);
+}
+.modal-foto-bloqueada-close {
+    position: absolute; top: 12px; right: 18px; font-size: 2rem; color: #1976d2; cursor: pointer;
+    font-weight: bold; transition: color 0.2s;
+}
+.modal-foto-bloqueada-close:hover { color: #b71c1c; }
+.btn-modal-foto-bloqueada {
+    background: linear-gradient(90deg,#1976d2 60%,#388e3c 100%); color: #fff; border: none; border-radius: 8px; padding: 10px 28px;
+    font-size: 1.1rem; margin-top: 18px; cursor: pointer; transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(25,118,210,0.10);
+}
+.btn-modal-foto-bloqueada:hover { background: linear-gradient(90deg,#388e3c 60%,#1976d2 100%); box-shadow: 0 4px 16px rgba(56,142,60,0.13); }
+.modal-foto-bloqueada-icon {
+    margin-bottom: 18px;
+    display: flex; align-items: center; justify-content: center;
+}
+.modal-foto-bloqueada-circle {
+    stroke-dasharray: 201;
+    stroke-dashoffset: 201;
+    animation: dashCircle 0.7s ease-out forwards;
+}
+.modal-foto-bloqueada-check {
+    stroke-dasharray: 36;
+    stroke-dashoffset: 36;
+    animation: dashCheck 0.5s 0.5s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popInModal { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes dashCircle { to { stroke-dashoffset: 0; } }
+@keyframes dashCheck { to { stroke-dashoffset: 0; } }
+</style>
+<script>
+    let video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const fotoFile = document.getElementById('fotoFile');
+    const btnTomarFoto = document.getElementById('btnTomarFoto');
+    const btnCancelar = document.getElementById('btnCancelar');
+    const previewContainer = document.getElementById('preview-container');
+    const fotoPreview = document.getElementById('fotoPreview');
+    const camStatus = document.getElementById('cam-status');
+    const camStatusText = document.getElementById('cam-status-text');
+    // const countdown = document.getElementById('countdown');
+    const btnSwitchCam = document.getElementById('btnSwitchCam');
+
+    let currentStream = null;
+    let usingFront = true;
+
+    function setCamStatus(status, msg) {
+        camStatus.className = 'cam-status ' + status;
+        camStatusText.textContent = msg;
+    }
+
+    async function startCamera() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+        let constraints = {
+            audio: false,
+            video: {
+                facingMode: usingFront ? { ideal: 'user' } : { ideal: 'environment' },
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            }
+        };
+        setCamStatus('cam-status-inicial', 'Cargando...');
+        try {
+            // Para iOS/Safari, pedir permiso explícito y usar constraints simples si falla
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            } catch (e) {
+                // Fallback para iOS/Safari: sin facingMode avanzado
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            }
+            video.srcObject = currentStream;
+            setCamStatus('cam-status-ok', 'Cámara lista');
+        } catch (err) {
+            setCamStatus('cam-status-error', 'No se pudo acceder a la cámara');
+            alert('No se pudo acceder a la cámara: ' + err);
+        }
+    }
+
+    btnSwitchCam.addEventListener('click', () => {
+        usingFront = !usingFront;
+        startCamera();
+    });
+
+    startCamera();
+
+
+
+    function takePhoto() {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        // Validación simple de tamaño mínimo
+        if (canvas.width < 200 || canvas.height < 200) {
+            alert('La resolución de la foto es muy baja. Usa una cámara de mejor calidad.');
+            return;
+        }
+        canvas.toBlob(blob => {
+            const file = new File([blob], 'foto.jpg', { type: 'image/jpeg' });
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fotoFile.files = dt.files;
+            const reader = new FileReader();
+            reader.onload = e => {
+                fotoPreview.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+                video.classList.add('hidden');
+                btnTomarFoto.classList.add('hidden');
+            };
+            reader.readAsDataURL(blob);
+        }, 'image/jpeg');
+    }
+
+    btnTomarFoto.addEventListener('click', takePhoto);
+
+    // Cancelar vista previa
+    btnCancelar.addEventListener('click', () => {
+        previewContainer.classList.add('hidden');
+        video.classList.remove('hidden');
+        btnTomarFoto.classList.remove('hidden');
+        fotoFile.value = '';
+    });
+
+    // Vista previa al subir foto manual
+    const fotoFileManual = document.getElementById('fotoFileManual');
+    if (fotoFileManual) {
+        fotoFileManual.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert('Solo se permiten imágenes.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                fotoPreview.src = ev.target.result;
+                previewContainer.classList.remove('hidden');
+                video.classList.add('hidden');
+                btnTomarFoto.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+            // Copia el archivo al input oculto para que se envíe en el form
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fotoFile.files = dt.files;
+        });
+    }
+
+    // Animación de éxito al subir foto y bloqueo de pantalla
+    const fotoForm = document.getElementById('fotoForm');
+    if (fotoForm) {
+        fotoForm.addEventListener('submit', function(e) {
+            setTimeout(() => {
+                let success = document.createElement('div');
+                success.className = 'success-anim';
+                success.innerHTML = '✅ ¡Foto subida con éxito!';
+                document.querySelector('.foto-content').appendChild(success);
+                setTimeout(() => success.remove(), 2500);
+                mostrarModalFotoBloqueada();
+            }, 400);
+        });
+    }
+
+    // Mostrar modal tras subir foto correctamente
+function mostrarModalFotoBloqueada() {
+    document.getElementById('modalFotoBloqueada').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function cerrarModalFotoBloqueada() {
+    document.getElementById('modalFotoBloqueada').style.display = 'none';
+    document.body.style.overflow = '';
+}
+// Cerrar modal al hacer click fuera del contenido
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('modalFotoBloqueada');
+        if (modal && modal.style.display === 'flex' && e.target === modal) cerrarModalFotoBloqueada();
+    });
+</script>
+<!-- Modal de bloqueo tras subir foto -->
+<div id="modalFotoBloqueada" class="modal-foto-bloqueada" style="display:none;">
+    <div class="modal-foto-bloqueada-content">
+        <span class="modal-foto-bloqueada-close" onclick="cerrarModalFotoBloqueada()">&times;</span>
+        <div class="modal-foto-bloqueada-icon">
+            <svg width="70" height="70" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle class="modal-foto-bloqueada-circle" cx="35" cy="35" r="32" stroke="#1976d2" stroke-width="5"/>
+                <polyline class="modal-foto-bloqueada-check" points="22,38 32,48 48,26" style="fill:none;stroke:#388e3c;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;"/>
+            </svg>
+        </div>
+        <h2>Foto enviada</h2>
+        <p>Tu foto ha sido enviada correctamente.<br><b>No puedes volver a subir otra foto hasta que el administrador la valide.</b></p>
+        <p>Si tu foto es rechazada, podrás intentarlo de nuevo.<br>Si tienes dudas, contacta a control escolar.<br>
+        <a href="mailto:control@uptecamac.edu.mx">control@uptecamac.edu.mx</a> o <a href="https://wa.me/5215555555555" target="_blank">WhatsApp</a></p>
+        <button onclick="cerrarModalFotoBloqueada()" class="btn-modal-foto-bloqueada">Entendido</button>
+    </div>
+</div>
+<style>
+.modal-foto-bloqueada {
+    position: fixed; z-index: 9999; left: 0; top: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center;
+    animation: fadeInModal 0.4s cubic-bezier(.4,0,.2,1);
+}
+.modal-foto-bloqueada-content {
+    background: #fff; border-radius: 22px; padding: 38px 28px 32px 28px; max-width: 420px; width: 90vw;
+    box-shadow: 0 12px 40px 0 rgba(25,118,210,0.18), 0 2px 8px rgba(0,0,0,0.10);
+    text-align: center; position: relative;
+    border: 2.5px solid #1976d2;
+    animation: popInModal 0.45s cubic-bezier(.4,0,.2,1);
+}
+.modal-foto-bloqueada-close {
+    position: absolute; top: 12px; right: 18px; font-size: 2rem; color: #1976d2; cursor: pointer;
+    font-weight: bold; transition: color 0.2s;
+}
+.modal-foto-bloqueada-close:hover { color: #b71c1c; }
+.btn-modal-foto-bloqueada {
+    background: linear-gradient(90deg,#1976d2 60%,#388e3c 100%); color: #fff; border: none; border-radius: 8px; padding: 10px 28px;
+    font-size: 1.1rem; margin-top: 18px; cursor: pointer; transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(25,118,210,0.10);
+}
+.btn-modal-foto-bloqueada:hover { background: linear-gradient(90deg,#388e3c 60%,#1976d2 100%); box-shadow: 0 4px 16px rgba(56,142,60,0.13); }
+.modal-foto-bloqueada-icon {
+    margin-bottom: 18px;
+    display: flex; align-items: center; justify-content: center;
+}
+.modal-foto-bloqueada-circle {
+    stroke-dasharray: 201;
+    stroke-dashoffset: 201;
+    animation: dashCircle 0.7s ease-out forwards;
+}
+.modal-foto-bloqueada-check {
+    stroke-dasharray: 36;
+    stroke-dashoffset: 36;
+    animation: dashCheck 0.5s 0.5s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popInModal { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes dashCircle { to { stroke-dashoffset: 0; } }
+@keyframes dashCheck { to { stroke-dashoffset: 0; } }
+</style>
+<script>
+// Mostrar modal tras subir foto correctamente
+function mostrarModalFotoBloqueada() {
+    document.getElementById('modalFotoBloqueada').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function cerrarModalFotoBloqueada() {
+    document.getElementById('modalFotoBloqueada').style.display = 'none';
+    document.body.style.overflow = '';
+}
+// Cerrar modal al hacer click fuera del contenido
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('modalFotoBloqueada');
+        if (modal && modal.style.display === 'flex' && e.target === modal) cerrarModalFotoBloqueada();
+    });
+</script>
+<!-- Botón de ayuda -->
+<div style="position:fixed;bottom:24px;left:24px;z-index:100;">
+    <button class="ayuda-btn" tabindex="0">❓ Ayuda</button>
+    <div class="ayuda-tooltip">
+        <b>¿Problemas con la cámara?</b><br>
+        - Permite el acceso a la cámara en tu navegador.<br>
+        - Si tienes varias cámaras, usa el botón "Cambiar cámara".<br>
+        - Si la foto sale borrosa, limpia el lente y repite.<br>
+        - Si tienes dudas, contacta a soporte o acude al módulo de orientación.<br>
+    </div>
+</div>
+
+<footer>
+    <p>&copy; 2025 Universidad Politécnica de Tecámac</p>
+</footer>
+</body>
+</html>

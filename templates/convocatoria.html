@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Registro UPT</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+<header class="navbar innovated-navbar">
+    <div class="navbar-left">
+        <img src="{{ url_for('static', filename='logo-uptecamac.png') }}" alt="Logo UPT" class="logo" />
+        <span class="navbar-title">Universidad Politécnica de Tecámac</span>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Inicio</a></li>
+            <li><a href="{{ url_for('convocatoria') }}" class="active">Registro</a></li>
+            <li><a href="{{ url_for('validaciones') }}">Validaciones</a></li>
+            <li><a href="{{ url_for('tomar_foto') }}">Foto Credencial</a></li>
+        </ul>
+    </nav>
+</header>
+
+
+<main>
+    <section class="registro-hero">
+        <div class="registro-hero-content">
+            <img src="{{ url_for('static', filename='logo-uptecamac.png') }}" alt="Logo UPT" class="registro-hero-logo" />
+            <div>
+                <h1 class="registro-hero-title">Registro de Aspirantes</h1>
+                <p class="registro-hero-desc">¡Inscríbete ahora! La convocatoria para el ciclo 2025 está abierta.<br>Completa el formulario y adjunta tus documentos para iniciar tu proceso de admisión.</p>
+            </div>
+        </div>
+    </section>
+    <section class="registro-instrucciones">
+        <h2>¿Cómo registrarte?</h2>
+        <ol class="registro-lista">
+            <li>Adjunta tu <b>CURP</b> y <b>Acta de Nacimiento</b> en formato PDF.</li>
+            <li>Llena todos los campos obligatorios del formulario.</li>
+            <li>Verifica que tu correo y teléfono sean correctos.</li>
+            <li>Selecciona la carrera de tu interés.</li>
+            <li>Haz clic en <b>Registrar</b> y espera la validación de tus datos y despues dirigite a validaciones y ingeresa los datos solicitados.</li>
+        </ol>
+        <div class="registro-alerta">
+            <span>⚠️</span> <b>Importante:</b> Solo los registros completos y correctos serán validados. Revisa tu correo para conocer el estado de tu registro.
+        </div>
+    </section>
+    <section class="content registro-content">
+        {% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <script>
+      mostrarModal(`{{ messages[0]|safe }}`, [
+        {texto: "Ir a Validaciones", accion: ()=>{window.location='{{ url_for('validaciones') }}'}}
+      ]);
+    </script>
+  {% endif %}
+{% endwith %}
+        {% if puede_reintentar or not registro_bloqueado %}
+        <form action="{{ url_for('registrar') }}" method="POST" enctype="multipart/form-data" class="form-registro" autocomplete="off">
+            <label>*CURP (PDF):</label>
+            <input type="file" name="curp_pdf" accept="application/pdf" required />
+            <label>*Acta de Nacimiento (PDF):</label>
+            <input type="file" name="acta_pdf" accept="application/pdf" required />
+            <label>*Curp:</label>
+            <input type="text" name="curp" required />
+            <label>*Nombre:</label>
+            <input type="text" name="nombre" required />
+            <label>*Apellidos:</label>
+            <input type="text" name="apellidos" required />
+            <label>*RFC:</label>
+            <input type="text" name="rfc" required />
+            <label>*Número Seguro Social:</label>
+            <input type="text" name="nss" required />
+            <label>*Teléfono:</label>
+            <input type="tel" name="telefono" required />
+            <label>*Correo Electrónico:</label>
+            <input type="email" name="correo" required />
+            <label>*Sexo:</label>
+            <select name="sexo" required>
+                <option value="">Selecciona</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Femenino">Femenino</option>
+            </select>
+            <label>*Carrera:</label>
+            <select name="carrera" required>
+                <option value="">Selecciona</option>
+                <option value="ITII">Licenciatura Ingeniería en Tecnologías de la Información e Innovación Digital</option>
+                <option value="IMEC">Licenciatura en Mecánica Automotriz</option>
+                <option value="IMAN">Licenciatura en Ingeniería en Manufactura Avanzada</option>
+                <option value="IFI">Licenciatura Ingeniería Financiera</option>
+                <option value="LNI">Licenciatura en Comercio Internacional y Aduanas</option>
+                <option value="LAFTA">Licenciatura en Administración y Finanzas Tecnológicas Avanzadas (LAFTA)</option>
+            </select>
+            <label>*Fecha de nacimiento:</label>
+            <input type="date" name="fecha_nacimiento" required max="{{ fecha_hoy }}" />
+            <label>*Domicilio:</label>
+            <input type="text" name="domicilio" required placeholder="Calle, número, colonia, municipio" />
+            <label>*¿Cómo te enteraste de la UPT?</label>
+            <select name="difusion" required>
+                <option value="">Selecciona</option>
+                <option value="Redes sociales">Redes sociales</option>
+                <option value="Recomendación">Recomendación</option>
+                <option value="Escuela">Escuela</option>
+                <option value="Otro">Otro</option>
+            </select>
+            <div class="registro-privacidad">
+                <input type="checkbox" name="privacidad" required id="privacidad" />
+                <label for="privacidad">Acepto el <a href="#" onclick="alert('Tus datos serán tratados conforme a la Ley de Protección de Datos Personales. Solo serán usados para fines administrativos de la UPT.');return false;">aviso de privacidad</a>.</label>
+            </div>
+            <button type="submit">Registrar</button>
+        </form>
+        {% else %}
+        <div class="registro-bloqueado">
+            <h3>Ya has enviado tu registro.</h3>
+            <div class="espera-animada">
+                <div class="spinner-espera"></div>
+                <div class="texto-espera-animado">
+                    <span>Esperando validación de tus datos</span>
+                    <span class="puntos">...</span>
+                </div>
+            </div>
+            <p style="margin-top:18px;">Si tu registro es rechazado, podrás volver a intentarlo aquí.</p>
+            <div class="registro-bloqueado-ayuda">
+                <p>¿Tienes dudas o necesitas corregir tus datos? <br>
+                <b>Contacta a control escolar:</b> <a href="mailto:control@uptecamac.edu.mx">control@uptecamac.edu.mx</a> o <a href="https://wa.me/5215555555555" target="_blank">WhatsApp</a>.</p>
+            </div>
+        </div>
+        {% endif %}
+        <div id="modalRegistroBloqueado" class="modal-bloqueado" style="display:none;">
+            <div class="modal-bloqueado-content">
+                <span class="modal-bloqueado-close" onclick="cerrarModalBloqueado()">&times;</span>
+                <div class="modal-bloqueado-icon">
+                    <svg width="70" height="70" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle class="modal-bloqueado-circle" cx="35" cy="35" r="32" stroke="#1976d2" stroke-width="5"/>
+                        <polyline class="modal-bloqueado-check" points="22,38 32,48 48,26" style="fill:none;stroke:#388e3c;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;"/>
+                    </svg>
+                </div>
+                <h2>Registro enviado</h2>
+                <p>Ya has enviado tu registro.<br><b>No puedes enviar otro registro con la misma CURP.</b></p>
+                <p>Si necesitas hacer una corrección, contacta a control escolar.<br>
+                <a href="mailto:control@uptecamac.edu.mx">control@uptecamac.edu.mx</a> o <a href="https://wa.me/5215555555555" target="_blank">WhatsApp</a></p>
+                <button onclick="cerrarModalBloqueado()" class="btn-modal-bloqueado">Entendido</button>
+            </div>
+        </div>
+        <style>
+        .modal-bloqueado {
+            position: fixed; z-index: 9999; left: 0; top: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center;
+            animation: fadeInModal 0.4s cubic-bezier(.4,0,.2,1);
+        }
+        .modal-bloqueado-content {
+            background: #fff; border-radius: 22px; padding: 38px 28px 32px 28px; max-width: 420px; width: 90vw;
+            box-shadow: 0 12px 40px 0 rgba(25,118,210,0.18), 0 2px 8px rgba(0,0,0,0.10);
+            text-align: center; position: relative;
+            border: 2.5px solid #1976d2;
+            animation: popInModal 0.45s cubic-bezier(.4,0,.2,1);
+        }
+        .modal-bloqueado-close {
+            position: absolute; top: 12px; right: 18px; font-size: 2rem; color: #1976d2; cursor: pointer;
+            font-weight: bold; transition: color 0.2s;
+        }
+        .modal-bloqueado-close:hover { color: #b71c1c; }
+        .btn-modal-bloqueado {
+            background: linear-gradient(90deg,#1976d2 60%,#388e3c 100%); color: #fff; border: none; border-radius: 8px; padding: 10px 28px;
+            font-size: 1.1rem; margin-top: 18px; cursor: pointer; transition: background 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 8px rgba(25,118,210,0.10);
+        }
+        .btn-modal-bloqueado:hover { background: linear-gradient(90deg,#388e3c 60%,#1976d2 100%); box-shadow: 0 4px 16px rgba(56,142,60,0.13); }
+        .modal-bloqueado-icon {
+            margin-bottom: 18px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-bloqueado-circle {
+            stroke-dasharray: 201;
+            stroke-dashoffset: 201;
+            animation: dashCircle 0.7s ease-out forwards;
+        }
+        .modal-bloqueado-check {
+            stroke-dasharray: 36;
+            stroke-dashoffset: 36;
+            animation: dashCheck 0.5s 0.5s cubic-bezier(.4,0,.2,1) forwards;
+        }
+        @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popInModal { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes dashCircle { to { stroke-dashoffset: 0; } }
+        @keyframes dashCheck { to { stroke-dashoffset: 0; } }
+        </style>
+        <script>
+        // Mostrar modal automáticamente si el registro está bloqueado
+        window.addEventListener('DOMContentLoaded', function() {
+            if (document.querySelector('.registro-bloqueado')) {
+                document.getElementById('modalRegistroBloqueado').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        });
+        function cerrarModalBloqueado() {
+            document.getElementById('modalRegistroBloqueado').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        // Cerrar modal al hacer click fuera del contenido
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('modalRegistroBloqueado');
+            if (modal && modal.style.display === 'flex' && e.target === modal) cerrarModalBloqueado();
+        });
+        </script>
+    </section>
+</main>
+    </section>
+</main>
+
+<footer>
+    <div class="footer-content">
+        <div class="footer-logo">
+            <img src="{{ url_for('static', filename='logo-uptecamac.png') }}" alt="Logo UPT" style="height:40px;vertical-align:middle;" />
+        </div>
+        <div class="footer-info">
+            <p>&copy; 2025 Universidad Politécnica de Tecámac</p>
+            <p><a href="mailto:info@uptecamac.edu.mx">info@uptecamac.edu.mx</a> | <a href="https://www.uptecamac.edu.mx" target="_blank">www.uptecamac.edu.mx</a></p>
+        </div>
+        <div class="footer-social">
+            <a href="https://facebook.com/uptecamac" target="_blank"><img src="{{ url_for('static', filename='facebook.png') }}" alt="Facebook" style="height:28px;margin:0 6px;" /></a>
+            <a href="mailto:info@uptecamac.edu.mx"><img src="{{ url_for('static', filename='mail.png') }}" alt="Mail" style="height:28px;margin:0 6px;" /></a>
+            <a href="https://wa.me/5215555555555" target="_blank"><img src="{{ url_for('static', filename='whatsaap.png') }}" alt="WhatsApp" style="height:28px;margin:0 6px;" /></a>
+        </div>
+    </div>
+</footer>
+<style>
+.registro-bloqueado {
+    background: #fff3e0;
+    border: 1.5px solid #ff9800;
+    border-radius: 10px;
+    padding: 24px 18px;
+    margin: 32px auto 0 auto;
+    max-width: 480px;
+    text-align: center;
+    color: #b71c1c;
+    font-size: 1.15rem;
+    box-shadow: 0 2px 8px rgba(183,28,28,0.07);
+}
+.registro-bloqueado h3 {
+    margin-bottom: 8px;
+    color: #d32f2f;
+}
+.registro-bloqueado-ayuda {
+    margin-top: 16px;
+    font-size: 1rem;
+    color: #333;
+}
+.registro-privacidad {
+    margin: 18px 0 10px 0;
+    font-size: 0.98rem;
+}
+.footer-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 8vw 8px 8vw;
+    background: #f5f5f5;
+    border-top: 1.5px solid #e0e0e0;
+}
+.footer-info {
+    font-size: 1rem;
+    color: #444;
+}
+.footer-social a img {
+    filter: grayscale(0.2) brightness(0.95);
+    transition: filter 0.2s;
+}
+.footer-social a img:hover {
+    filter: none;
+}
+</style>
+<!-- Modal de notificación -->
+<div id="notificacion-modal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span id="cerrar-modal" class="close">&times;</span>
+    <div id="mensaje-modal"></div>
+    <div id="botones-modal" style="margin-top:20px; text-align:center;"></div>
+  </div>
+</div>
+<style>
+.modal {
+  position: fixed; z-index: 9999; left: 0; top: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;
+}
+.modal-content {
+  background: #fff; padding: 30px 40px; border-radius: 12px; box-shadow: 0 4px 32px #0002;
+  min-width: 320px; max-width: 90vw; text-align: center; font-size: 1.2em; position: relative;
+}
+.close { position: absolute; right: 24px; top: 18px; font-size: 2em; cursor: pointer; color: #888;}
+</style>
+<script>
+function mostrarModal(mensaje, botones=[]) {
+  document.getElementById('mensaje-modal').innerHTML = mensaje;
+  let cont = document.getElementById('botones-modal');
+  cont.innerHTML = '';
+  botones.forEach(b => {
+    let btn = document.createElement('button');
+    btn.innerText = b.texto;
+    btn.onclick = b.accion;
+    btn.style.margin = "0 8px";
+    btn.className = "btn btn-primary";
+    cont.appendChild(btn);
+  });
+  document.getElementById('notificacion-modal').style.display = 'flex';
+}
+document.getElementById('cerrar-modal').onclick = function() {
+  document.getElementById('notificacion-modal').style.display = 'none';
+};
+window.onclick = function(event) {
+  if (event.target == document.getElementById('notificacion-modal')) {
+    document.getElementById('notificacion-modal').style.display = 'none';
+  }
+  
+};
+
+</script>
+
+
+</body>
+</html>

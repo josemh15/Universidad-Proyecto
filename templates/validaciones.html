@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Validaciones - UPT</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <style>
+        .estado {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .validado {
+            color: green;
+            font-weight: bold;
+        }
+        .pendiente {
+            color: orange;
+            font-weight: bold;
+        }
+        .rechazado {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    
+<header class="navbar innovated-navbar">
+    <div class="navbar-left">
+        <img src="{{ url_for('static', filename='logo-uptecamac.png') }}" alt="Logo UPT" class="logo" />
+        <span class="navbar-title">Universidad Politécnica de Tecámac</span>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Inicio</a></li>
+            <li><a href="{{ url_for('convocatoria') }}">Registro</a></li>
+            <li><a href="{{ url_for('validaciones') }}" class="active">Validaciones</a></li>
+            <li><a href="{{ url_for('tomar_foto') }}">Foto Credencial</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <section class="validaciones-hero">
+        <div class="validaciones-hero-content">
+            <img src="{{ url_for('static', filename='logo-uptecamac.png') }}" alt="Logo UPT" class="validaciones-hero-logo" />
+            <div>
+                <h1 class="validaciones-hero-title">Consulta tu estado de validación</h1>
+                <p class="validaciones-hero-desc">Verifica el avance de tu registro y sigue los pasos para obtener tu credencial universitaria.</p>
+            </div>
+        </div>
+    </section>
+    <section class="validaciones-instrucciones">
+        <h2>¿Cómo funciona el proceso?</h2>
+        <ol class="instrucciones-lista">
+            <li><strong>Ingresa tu CURP y correo electrónico</strong> en el formulario de abajo.</li>
+            <li><strong>Consulta el estado</strong> de tu registro y foto.</li>
+            <li>Si tu registro es <span class="validado">aprobado</span>, <strong>copia tu matrícula</strong>.</li>
+            <li>Dirígete al apartado <b>Foto Credencial</b> e ingresa tu matrícula y CURP para tomar tu foto.</li>
+            <li>Si tu registro o foto es <span class="rechazado">rechazado</span>, revisa tus dtaos sean corretos y vuelve a intentarlo.</li>
+        </ol>
+        <div class="instrucciones-alerta">
+            <span>⚠️</span> <b>Recuerda:</b> Solo los registros y fotos validados podrán obtener credencial.
+        </div>
+    </section>
+    <section class="content validaciones-content">
+        
+        {% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <script>
+      // Si el mensaje inicia con "matricula:", muestra el modal especial
+      {% if messages[0].startswith('matricula:') %}
+        let matricula = "{{ messages[0][10:] }}";
+        mostrarModal(
+          `✅ ¡Registro validado!<br>Tu matrícula es:<br><b style="font-size:1.5em;">${matricula}</b>`,
+          [
+            {
+              texto: "Copiar matrícula",
+              accion: function() {
+                navigator.clipboard.writeText(matricula);
+                alert('¡Matrícula copiada!');
+              }
+            },
+            {
+              texto: "Cerrar",
+              accion: function() {
+                document.getElementById('notificacion-modal').style.display = 'none';
+              }
+            }
+          ]
+        );
+      {% else %}
+        // Para cualquier otro mensaje, muestra el modal normal
+        mostrarModal(`{{ messages[0]|safe }}`, [
+          {texto: "Cerrar", accion: ()=>{document.getElementById('notificacion-modal').style.display='none';} }
+        ]);
+      {% endif %}
+    </script>
+  {% endif %}
+{% endwith %}
+        
+        <form action="{{ url_for('validar') }}" method="POST" class="form-validacion">
+            <label for="curp">CURP:</label>
+            <input type="text" id="curp" name="curp" required maxlength="18" />
+
+            <label for="correo">Correo Electrónico:</label>
+            <input type="email" id="correo" name="correo" required />
+
+            <button type="submit">Consultar</button>
+        </form>
+
+        {% if resultado %}
+            <div class="estado">
+                <h2>Estado para {{ resultado.nombre }} {{ resultado.apellidos }}</h2>
+                <p><strong>CURP:</strong> {{ resultado.curp }}</p>
+                <p><strong>Matrícula:</strong> {{ resultado.matricula if resultado.matricula else 'No asignada' }}</p>
+
+                <p><strong>Validación de Registro:</strong>
+                    {% if resultado.registro_validado == true %}
+                        <span class="validado">✅ Registrado y aprobado</span>
+                    {% elif resultado.registro_validado == false %}
+                        <span class="rechazado">❌ Registro rechazado</span>
+                    {% else %}
+                        <span class="pendiente">⏳ Registro pendiente</span>
+                    {% endif %}
+                </p>
+
+                <p><strong>Validación de Foto:</strong>
+                    {% if resultado.foto_validada == true %}
+                        <span class="validado">✅ Foto validada</span>
+                    {% elif resultado.foto_validada == false %}
+                        <span class="rechazado">❌ Foto rechazada</span>
+                    {% else %}
+                        <span class="pendiente">⏳ Foto pendiente</span>
+                    {% endif %}
+                </p>
+            </div>
+        {% endif %}
+    </section>
+</main>
+<!-- Modal de notificación -->
+<div id="notificacion-modal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span id="cerrar-modal" class="close">&times;</span>
+    <div id="mensaje-modal"></div>
+    <div id="botones-modal" style="margin-top:20px; text-align:center;"></div>
+  </div>
+</div>
+<style>
+.modal {
+  position: fixed; z-index: 9999; left: 0; top: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;
+}
+.modal-content {
+  background: #fff; padding: 30px 40px; border-radius: 12px; box-shadow: 0 4px 32px #0002;
+  min-width: 320px; max-width: 90vw; text-align: center; font-size: 1.2em; position: relative;
+}
+.close { position: absolute; right: 24px; top: 18px; font-size: 2em; cursor: pointer; color: #888;}
+</style>
+<script>
+function mostrarModal(mensaje, botones=[]) {
+  document.getElementById('mensaje-modal').innerHTML = mensaje;
+  let cont = document.getElementById('botones-modal');
+  cont.innerHTML = '';
+  botones.forEach(b => {
+    let btn = document.createElement('button');
+    btn.innerText = b.texto;
+    btn.onclick = b.accion;
+    btn.style.margin = "0 8px";
+    btn.className = "btn btn-primary";
+    cont.appendChild(btn);
+  });
+  document.getElementById('notificacion-modal').style.display = 'flex';
+}
+document.getElementById('cerrar-modal').onclick = function() {
+  document.getElementById('notificacion-modal').style.display = 'none';
+};
+window.onclick = function(event) {
+  if (event.target == document.getElementById('notificacion-modal')) {
+    document.getElementById('notificacion-modal').style.display = 'none';
+  }
+};
+</script>
+
+
+  
+<footer>
+    <p>&copy; 2025 Universidad Politécnica de Tecámac</p>
+</footer>
+</body>
+</html>

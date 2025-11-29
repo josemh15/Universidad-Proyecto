@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Universidad Politécnica de Tecámac</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+<header class="navbar innovated-navbar">
+    <div class="navbar-left">
+        <img src="{{ url_for('static', filename='logo-uptecamac.png') }}" alt="Logo UPT" class="logo" />
+        <span class="navbar-title">Universidad Politécnica de Tecámac</span>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Inicio</a></li>
+            <li><a href="{{ url_for('convocatoria') }}">Registro</a></li>
+            <li><a href="{{ url_for('validaciones') }}">Validaciones</a></li>
+            <li><a href="{{ url_for('tomar_foto') }}">Foto Credencial</a></li>
+        </ul>
+    </nav>
+</header>
+<main>
+    <section class="hero innovated-hero">
+        <div class="hero-video-wrapper">
+            <video autoplay muted loop playsinline class="hero-video">
+                <source src="{{ url_for('static', filename='video-uptecamac.mp4') }}" type="video/mp4" />
+                Tu navegador no soporta video.
+            </video>
+            <div class="hero-overlay"></div>
+        </div>
+        <div class="hero-text innovated-hero-text">
+            <h1><span class="hero-title-gradient">Bienvenido a la Universidad Politécnica de Tecámac</span></h1>
+            <p class="hero-subtitle">Impulsando el conocimiento y la innovación tecnológica para el desarrollo regional.</p>
+            <a href="#acerca" class="btn-hero">Conócenos</a>
+        </div>
+    </section>
+
+    <section class="texto innovated-texto" id="acerca">
+        <div class="texto-content">
+            <h1><span class="texto-title-gradient">ACERCA DE NOSOTROS</span></h1>
+            <p>
+                La Universidad Politécnica de Tecámac tiene el firme compromiso de contribuir al crecimiento nacional de nuestro país mediante la formación de profesionistas con calidad, a través de competencias profesionales; permitiendo con ello resolver la problemática de las empresas y fomentar el bienestar social.
+            </p>
+            <div class="texto-divider"></div>
+            <p>
+                Somos una Universidad Pública, descentralizada del Gobierno del Estado de México. Nos encontramos en el municipio de Tecámac como una alternativa para las y los jóvenes egresados del nivel medio superior y como un apoyo al sector industrial, de comercio y de servicios del Valle de Tecámac.
+            </p>
+        </div>
+        <div class="texto-img-side">
+            <img src="/static/logo-uptecamac.png" alt="Logo UPT" class="texto-logo-img">
+        </div>
+    </section>
+
+            <section class="oferta-educativa">
+                <h1>OFERTA EDUCATIVA</h1>
+                <p class="oferta-desc">Nuestra oferta educativa nace a partir de la pertinencia manifiesta por las necesidades del sector empresarial. Este proyecto apunta a consolidar la relación Empresa – Universidad.</p>
+                <div class="carreras-grid">
+                    <div class="carrera-card" onclick="mostrarCarrera('aduanas')">
+                        <img src="/static/logos/ADUANAS.png" alt="Licenciatura en Comercio Internacional y Aduanas" class="carrera-icon">
+                        <h3>Licenciatura en Comercio Internacional y Aduanas</h3>
+                    </div>
+                    <div class="carrera-card" onclick="mostrarCarrera('fin')">
+                        <img src="/static/logos/FIN.png" alt="Licenciatura en Ingeniería Financiera" class="carrera-icon">
+                        <h3>Licenciatura en Ingeniería Financiera</h3>
+                    </div>
+                    <div class="carrera-card" onclick="mostrarCarrera('auto')">
+                        <img src="/static/logos/AUTO.png" alt="Licenciatura en Ingeniería Automotriz" class="carrera-icon">
+                        <h3>Licenciatura en Ingeniería Automotriz</h3>
+                    </div>
+                    <div class="carrera-card" onclick="mostrarCarrera('manu')">
+                        <img src="/static/logos/MANU.png" alt="Licenciatura en Ingeniería en Manufactura Avanzada" class="carrera-icon">
+                        <h3>Licenciatura en Ingeniería en Manufactura Avanzada</h3>
+                    </div>
+                    <div class="carrera-card" onclick="mostrarCarrera('itii')">
+                        <img src="/static/logos/ITII.png" alt="Licenciatura en Ingeniería en Tecnologías de la Información e Innovación Digital" class="carrera-icon">
+                        <h3>Licenciatura en Ingeniería en Tecnologías de la Información e Innovación Digital</h3>
+                    </div>
+                </div>
+                <img src="/static/uni.jpg" alt="uni" class="uni">
+            </section>
+            <!-- Modal innovador para info de carreras -->
+            <div id="modalCarrera" class="modal-carrera" style="display:none;">
+                <div class="modal-carrera-content">
+                    <span class="modal-carrera-close" onclick="cerrarCarrera()">&times;</span>
+                    <h2 id="modalCarreraTitulo"></h2>
+                    <p id="modalCarreraTexto"></p>
+                </div>
+            </div>
+            <style>
+            .modal-carrera {
+                position: fixed; z-index: 9999; left: 0; top: 0; width: 100vw; height: 100vh;
+                background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center;
+                animation: fadeInModal 0.3s;
+            }
+            .modal-carrera-content {
+                background: #fff; border-radius: 18px; padding: 32px 28px; max-width: 420px; width: 90vw;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.18); text-align: center; position: relative;
+                border: 2.5px solid #1976d2;
+                animation: popInModal 0.3s;
+            }
+            .modal-carrera-close {
+                position: absolute; top: 12px; right: 18px; font-size: 2rem; color: #1976d2; cursor: pointer;
+                font-weight: bold; transition: color 0.2s;
+            }
+            .modal-carrera-close:hover { color: #b71c1c; }
+            @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes popInModal { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+            </style>
+            <script>
+            const infoCarreras = {
+                aduanas: {
+                    titulo: 'Licenciatura en Comercio Internacional y Aduanas',
+                    texto: 'Forma profesionales capaces de gestionar operaciones de comercio exterior, logística internacional y procesos aduanales, con visión estratégica y ética global. Prepárate para liderar la internacionalización de empresas y facilitar el intercambio comercial entre países.'
+                },
+                fin: {
+                    titulo: 'Ingeniería Financiera',
+                    texto: 'Desarrolla habilidades para analizar, planear y gestionar recursos financieros en empresas e instituciones. Aprende a diseñar soluciones innovadoras para el sector financiero, utilizando tecnología y modelos matemáticos de vanguardia.'
+                },
+                auto: {
+                    titulo: 'Ingeniería Automotriz',
+                    texto: 'Especialízate en el diseño, manufactura y mantenimiento de vehículos automotores. Sé parte de la transformación tecnológica de la industria automotriz, integrando energías limpias, automatización y sistemas inteligentes.'
+                },
+                manu: {
+                    titulo: 'Ingeniería en Manufactura Avanzada',
+                    texto: 'Conviértete en un ingeniero capaz de optimizar procesos productivos, implementar tecnologías de Industria 4.0 y liderar proyectos de innovación en manufactura. Tu formación te permitirá impactar la competitividad de empresas a nivel global.'
+                },
+                itii: {
+                    titulo: 'Ingeniería en Tecnologías de la Información e Innovación Digital',
+                    texto: 'Domina el desarrollo de software, ciberseguridad, inteligencia artificial y transformación digital. Sé protagonista de la revolución tecnológica, creando soluciones innovadoras para empresas y la sociedad.'
+                }
+            };
+            function mostrarCarrera(key) {
+                const modal = document.getElementById('modalCarrera');
+                document.getElementById('modalCarreraTitulo').textContent = infoCarreras[key].titulo;
+                document.getElementById('modalCarreraTexto').textContent = infoCarreras[key].texto;
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+            function cerrarCarrera() {
+                document.getElementById('modalCarrera').style.display = 'none';
+                document.body.style.overflow = '';
+            }
+            // Cerrar modal al hacer click fuera del contenido
+            document.addEventListener('click', function(e) {
+                const modal = document.getElementById('modalCarrera');
+                if (modal.style.display === 'flex' && e.target === modal) cerrarCarrera();
+            });
+            </script>
+            <section class="convocatoria-section">
+                <h1>CONVOCATORIA</h1>
+                <div class="convocatoria-box">
+                    <p>La Universidad Politécnica de Tecámac convoca a todos los jóvenes y adultos a inscribirse y formar parte de nuestra comunidad.<br>
+                    <strong>Convocatoria abierta:</strong> <span class="convocatoria-fecha">10 de julio - 26 de julio 2025</span><br>
+                    ¡Forma parte del grupo colmillo y estudia una de nuestras licenciaturas profesionales!</p>
+                    <div class="convocatoria-progress">
+                        <div class="progress-bar"></div>
+                    </div>
+                    <p class="convocatoria-instruccion">Presiona la imagen de abajo para iniciar tu registro:</p>
+                    <a href="{{ url_for('convocatoria') }}" class="registro-link"><img src="/static/foto.jpg" class="convoca" alt="Registro"></a>
+                </div>
+                <h2>Descarga nuestro manual para hacer tu registro</h2>
+                <a class="btn-manual" href="{{ url_for('static', filename='manuales/manual_usuario.pdf') }}" target="_blank">
+                    📄 Descargar Manual de Usuario
+                </a>
+            </section>
+        </div>
+</main>
+    <!-- Testimonios -->
+    <section class="testimonios-section">
+        <h2>Testimonios de Éxito</h2>
+        <div class="testimonios-grid">
+            <div class="testimonio-card">
+                <p>"Gracias a la UPT conseguí mi primer empleo en la industria automotriz antes de graduarme."</p>
+                <span>- Ana G., Egresada de Ingeniería Automotriz</span>
+            </div>
+            <div class="testimonio-card">
+                <p>"La formación práctica y los profesores me prepararon para los retos reales del sector financiero."</p>
+                <span>- Luis M., Egresado de Ingeniería Financiera</span>
+            </div>
+            <div class="testimonio-card">
+                <p>"El ambiente y la innovación en la UPT me motivaron a emprender mi propia empresa tecnológica."</p>
+                <span>- Sofía R., Egresada de TI e Innovación Digital</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq-section">
+        <h2>Preguntas Frecuentes</h2>
+        <div class="faq-item">
+            <h3>¿Cuándo inicia el próximo ciclo escolar?</h3>
+            <p>El ciclo inicia en septiembre 2025. Consulta la convocatoria para fechas exactas.</p>
+        </div>
+        <div class="faq-item">
+            <h3>¿Puedo registrarme si aún no tengo todos mis documentos?</h3>
+            <p>Sí, pero deberás entregarlos completos antes de la inscripción definitiva.</p>
+        </div>
+        <div class="faq-item">
+            <h3>¿La universidad tiene bolsa de trabajo?</h3>
+            <p>Sí, contamos con bolsa de trabajo y convenios con empresas de la región.</p>
+        </div>
+    </section>
+
+    <!-- Mapa de ubicación -->
+    <section class="mapa-section">
+        <h2>¿Dónde estamos?</h2>
+        <p>Av. 5 de Mayo Manzana 018, Tecamac, 55740 Tecámac de Felipe Villanueva, Méx.</p>
+        <div class="mapa-container">
+            <iframe src="https://www.google.com/maps?q=Av.+5+de+Mayo+Manzana+018,+Tecamac,+55740+Tecámac+de+Felipe+Villanueva,+Méx.&output=embed" width="100%" height="300" style="border:0; border-radius:12px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+    </section>
+
+    <!-- Redes sociales -->
+    <section class="redes-section">
+        <h2>Síguenos en redes sociales</h2>
+        <div class="redes-icons">
+            <a href="https://www.facebook.com/UPTecamacOficial" target="_blank" title="Facebook"><img src="/static/facebook.png" alt="Facebook" class="red-social-icon"></a>
+            <a href="mailto:info@uptecamac.edu.mx" title="Correo"><img src="/static/mail.png" alt="Correo" class="red-social-icon"></a>
+        </div>
+    </section>
+
+    <!-- Botón WhatsApp flotante -->
+    <a href="https://wa.me/5215555555555" class="whatsapp-float" target="_blank" title="WhatsApp"><img src="/static/whatsaap.png" alt="WhatsApp"></a>
+
+<footer>
+    <p>&copy; 2025 Universidad Politécnica de Tecámac</p>
+</footer>
+</body>
+</html>

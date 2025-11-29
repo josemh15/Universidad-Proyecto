@@ -1,0 +1,444 @@
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Panel de Administración</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+        <style>
+            .tarjeta {
+                border: 1px solid #ddd;
+                padding: 15px;
+                margin-bottom: 20px;
+                border-radius: 8px;
+            }
+            .validado { color: green; }
+            .pendiente { color: orange; }
+            .rechazado { color: red; }
+            img.foto {
+                max-width: 200px;
+                margin-top: 10px;
+                border: 1px solid #ccc;
+            }
+            .acciones button {
+                margin-right: 5px;
+            }
+        </style>
+    </head>
+    <body>
+    <header class="navbar innovated-navbar">
+        <div class="navbar-left">
+            <img src="{{ url_for('static', filename='logo-uptecamac.png') }}" alt="Logo UPT" class="logo" />
+            <span class="navbar-title">Universidad Politécnica de Tecámac</span>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('index') }}">Inicio</a></li>
+                <li><a href="{{ url_for('admin') }}">Panel Admin</a></li>
+                <li><a href="{{ url_for('exportar_pdf') }}">📄 Exportar PDF</a></li>
+
+                <li><a href="{{ url_for('logout') }}">Cerrar sesión</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+
+        <section class="admin-hero">
+            <div class="admin-hero-content">
+                <img src="{{ url_for('static', filename='logo-uptecamac.png') }}" alt="Logo UPT" class="admin-hero-logo" />
+                <div>
+                    <h1 class="admin-hero-title">Panel de Administración</h1>
+                    <p class="admin-hero-desc">Gestiona y valida los registros y fotos de los aspirantes.<br>¡Tu revisión es clave para la excelencia institucional!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Indicadores visuales -->
+        <section class="admin-indicadores">
+            <div class="indicador resumen">
+                <span class="indicador-titulo">Total registros</span>
+                <span class="indicador-num">{{ registros|length }}</span>
+            </div>
+            <div class="indicador pendiente">
+                <span class="indicador-titulo">Pendientes</span>
+                <span class="indicador-num">{{ registros.values()|selectattr('matricula', 'equalto', None)|list|length }}</span>
+            </div>
+            <div class="indicador validados">
+                <span class="indicador-titulo">Validados</span>
+                <span class="indicador-num">{{ registros.values()|selectattr('matricula')|list|length }}</span>
+            </div>
+        </section>
+
+        <!-- Buscador y filtro -->
+        <section class="admin-busqueda">
+            <form method="get" action="#" class="busqueda-form">
+                <input type="text" name="q" placeholder="Buscar por CURP, nombre o matrícula..." class="busqueda-input" />
+                <select name="estado" class="busqueda-select">
+                    <option value="">Todos</option>
+                    <option value="pendiente">Pendientes</option>
+                    <option value="validado">Validados</option>
+                    <option value="rechazado">Rechazados</option>
+                </select>
+                <button type="submit">🔍 Buscar</button>
+            </form>
+        </section>
+
+        <!-- Instrucciones -->
+        <section class="admin-instrucciones">
+            <h2>¿Cómo funciona el panel?</h2>
+            <ol class="admin-lista">
+                <li>Revisa los datos y documentos de cada aspirante.</li>
+                <li>Aprueba o rechaza registros según los requisitos.</li>
+                <li>Valida o rechaza las fotos subidas por los estudiantes.</li>
+                <li>Utiliza la opción <b>Exportar PDF</b> o <b>Excel</b> para generar reportes.</li>
+                <li>Cierra sesión al terminar para proteger la información.</li>
+            </ol>
+            <div class="admin-alerta">
+                <span>⚠️</span> <b>Importante:</b> Solo los registros y fotos validados serán aceptados en el sistema.
+            </div>
+        </section>
+
+        <!-- Mensajes flash -->
+        <section class="content admin-content">
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul class="flash-messages">
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+            {% endwith %}
+        </section>
+
+        <!-- CAJA VISUAL DE REGISTROS (mejorada y al fondo) -->
+        <section class="admin-registros-filtrados" style="margin:60px auto 0 auto;max-width:1200px;background:#fff;border-radius:18px;box-shadow:0 6px 32px #0002;padding:48px 24px 40px 24px;">
+            <h2 style="margin-bottom:28px;text-align:center;font-size:2.2rem;letter-spacing:1px;color:#1a7f1a;font-weight:900;">Registros de Usuarios</h2>
+            <div style="display:flex;justify-content:center;gap:18px;margin-bottom:32px;flex-wrap:wrap;">
+                <button class="filtro-btn" onclick="mostrarTabla('validados')" style="background:#e6ffe6;color:#1a7f1a;font-weight:bold;padding:14px 38px;border-radius:12px;border:none;cursor:pointer;transition:0.2s;font-size:1.1rem;">Validados</button>
+                <button class="filtro-btn" onclick="mostrarTabla('pendientes')" style="background:#fffbe6;color:#b38f00;font-weight:bold;padding:14px 38px;border-radius:12px;border:none;cursor:pointer;transition:0.2s;font-size:1.1rem;">Pendientes</button>
+                <button class="filtro-btn" onclick="mostrarTabla('rechazados')" style="background:#ffe6e6;color:#b30000;font-weight:bold;padding:14px 38px;border-radius:12px;border:none;cursor:pointer;transition:0.2s;font-size:1.1rem;">Rechazados</button>
+            </div>
+            <div style="display:flex;justify-content:center;margin-bottom:30px;">
+                <input id="busqueda" type="text" placeholder="Buscar por CURP, nombre, correo o matrícula..." style="width:400px;padding:12px 18px;border-radius:10px;border:2px solid #bdbdbd;font-size:1.15rem;box-shadow:0 1px 6px #0001;">
+            </div>
+            <!-- Tablas -->
+            <div id="tabla-validados" class="tabla-registros" style="display:none;">
+                <table id="tabla-validados-table" class="tabla-bonita">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>CURP</th>
+                            <th>Correo</th>
+                            <th>Fecha</th>
+                            <th>Matrícula</th>
+                            <th>Detalles</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for curp, datos in registros.items() if datos['matricula'] and datos['foto_validada'] is not false %}
+                        <tr>
+                            <td>{{ datos['nombre'] }} {{ datos['apellidos'] }}</td>
+                            <td>{{ curp }}</td>
+                            <td>{{ datos['correo'] }}</td>
+                            <td>{{ datos['fecha'] }}</td>
+                            <td>{{ datos['matricula'] }}</td>
+                            <td><button class="detalles-btn" onclick="mostrarDetalles('{{ curp }}')">Ver</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if registros|length == 0 or registros.values()|selectattr('matricula')|list|length == 0 %}
+                    <p style="color:gray;">No hay registros validados.</p>
+                {% endif %}
+            </div>
+            <div id="tabla-pendientes" class="tabla-registros" style="display:none;">
+                <table id="tabla-pendientes-table" class="tabla-bonita">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>CURP</th>
+                            <th>Correo</th>
+                            <th>Fecha</th>
+                            <th>Detalles</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for curp, datos in registros.items() if not datos['matricula'] and datos['foto_validada'] is not false %}
+                        <tr>
+                            <td>{{ datos['nombre'] }} {{ datos['apellidos'] }}</td>
+                            <td>{{ curp }}</td>
+                            <td>{{ datos['correo'] }}</td>
+                            <td>{{ datos['fecha'] }}</td>
+                            <td><button class="detalles-btn" onclick="mostrarDetalles('{{ curp }}')">Ver</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if registros|length == 0 or registros.values()|selectattr('matricula', 'equalto', None)|list|length == 0 %}
+                    <p style="color:gray;">No hay registros pendientes.</p>
+                {% endif %}
+            </div>
+            <div id="tabla-rechazados" class="tabla-registros" style="display:none;">
+                <table id="tabla-rechazados-table" class="tabla-bonita">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>CURP</th>
+                            <th>Correo</th>
+                            <th>Fecha</th>
+                            <th>Detalles</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for curp, datos in registros.items() if datos['foto_validada'] is sameas false %}
+                        <tr>
+                            <td>{{ datos['nombre'] }} {{ datos['apellidos'] }}</td>
+                            <td>{{ curp }}</td>
+                            <td>{{ datos['correo'] }}</td>
+                            <td>{{ datos['fecha'] }}</td>
+                            <td><button class="detalles-btn" onclick="mostrarDetalles('{{ curp }}')">Ver</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if registros|length == 0 or registros.values()|selectattr('foto_validada', 'equalto', false)|list|length == 0 %}
+                    <p style="color:gray;">No hay registros rechazados.</p>
+                {% endif %}
+            </div>
+            <!-- Modal detalles -->
+            <div id="modal-detalles" class="modal-detalles" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#0007;z-index:1000;align-items:center;justify-content:center;">
+                <div id="modal-detalles-content" style="background:#fff;padding:32px 28px 18px 28px;border-radius:14px;max-width:420px;width:90vw;box-shadow:0 8px 32px #0003;position:relative;">
+                    <button onclick="cerrarDetalles()" style="position:absolute;top:10px;right:10px;font-size:1.3rem;background:none;border:none;cursor:pointer;color:#b30000;">&times;</button>
+                    <div id="detalles-content"></div>
+                </div>
+            </div>
+        </section>
+
+        <style>
+        .tabla-bonita {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fafbfc;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px #0001;
+        }
+        .tabla-bonita th, .tabla-bonita td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #e0e0e0;
+            text-align: left;
+        }
+        .tabla-bonita th {
+            background: #f0f4f8;
+            font-weight: bold;
+        }
+        .tabla-bonita tr:last-child td {
+            border-bottom: none;
+        }
+        .detalles-btn {
+            background:#1a7f1a;color:#fff;padding:6px 18px;border-radius:6px;border:none;cursor:pointer;font-weight:bold;transition:0.2s;}
+        .detalles-btn:hover {background:#145c14;}
+        .modal-detalles {display:flex;}
+        #modal-detalles[style*='display: none'] {display:none!important;}
+        </style>
+
+        <script>
+        // Mostrar solo la tabla seleccionada
+        function mostrarTabla(tabla) {
+            document.getElementById('tabla-validados').style.display = 'none';
+            document.getElementById('tabla-pendientes').style.display = 'none';
+            document.getElementById('tabla-rechazados').style.display = 'none';
+            document.getElementById('tabla-' + tabla).style.display = 'block';
+        }
+        // Mostrar por defecto la de pendientes
+        window.onload = function() { mostrarTabla('pendientes'); };
+
+        // Buscador en tablas
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('busqueda');
+            const tablas = {
+                'validados': document.getElementById('tabla-validados-table'),
+                'pendientes': document.getElementById('tabla-pendientes-table'),
+                'rechazados': document.getElementById('tabla-rechazados-table')
+            };
+            input.addEventListener('keyup', function() {
+                const filtro = input.value.toLowerCase();
+                Object.keys(tablas).forEach(function(tabla) {
+                    const rows = tablas[tabla].getElementsByTagName('tr');
+                    for (let i = 1; i < rows.length; i++) {
+                        let mostrar = false;
+                        const celdas = rows[i].getElementsByTagName('td');
+                        for (let j = 0; j < celdas.length; j++) {
+                            if (celdas[j].textContent.toLowerCase().includes(filtro)) {
+                                mostrar = true;
+                                break;
+                            }
+                        }
+                        rows[i].style.display = mostrar ? '' : 'none';
+                    }
+                });
+            });
+        });
+
+        // Modal detalles
+        window._registros = {{ registros|tojson | safe }};
+        function mostrarDetalles(curp) {
+            const datos = window._registros[curp];
+            let html = `<h3 style='margin-bottom:10px;'>${datos['nombre']} ${datos['apellidos']}</h3>`;
+            html += `<b>CURP:</b> ${curp}<br>`;
+            html += `<b>Correo:</b> ${datos['correo']}<br>`;
+            html += `<b>Fecha registro:</b> ${datos['fecha']}<br>`;
+            html += `<b>Sexo:</b> ${datos['sexo'] || '-'}<br>`;
+            html += `<b>Matrícula:</b> ${datos['matricula'] || '-'}<br>`;
+            html += `<b>RFC:</b> ${datos['rfc'] || '-'}<br>`;
+            html += `<b>NSS:</b> ${datos['nss'] || '-'}<br>`;
+            html += `<b>Estado foto:</b> `;
+            if (datos['foto_validada'] === true) html += "<span style='color:green'>Validada</span>";
+            else if (datos['foto_validada'] === false) html += "<span style='color:red'>Rechazada</span>";
+            else html += "<span style='color:orange'>Pendiente</span>";
+            if (datos['foto']) html += `<br><img src='/static/fotos/${datos['foto']}' style='max-width:180px;margin-top:10px;border-radius:8px;'>`;
+            if (datos['curp_pdf']) html += `<br><a href='/static/documentos/${datos['curp_pdf']}' target='_blank'>Ver CURP PDF</a>`;
+            if (datos['acta_pdf']) html += `<br><a href='/static/documentos/${datos['acta_pdf']}' target='_blank'>Ver Acta PDF</a>`;
+            document.getElementById('detalles-content').innerHTML = html;
+            document.getElementById('modal-detalles').style.display = 'flex';
+        }
+        function cerrarDetalles() {
+            document.getElementById('modal-detalles').style.display = 'none';
+        }
+        </script>
+            <div class="admin-hero-content">
+                <img src="{{ url_for('static', filename='logo-uptecamac.png') }}" alt="Logo UPT" class="admin-hero-logo" />
+                <div>
+                    <h1 class="admin-hero-title">Panel de Administración</h1>
+                    <p class="admin-hero-desc">Gestiona y valida los registros y fotos de los aspirantes.<br>¡Tu revisión es clave para la excelencia institucional!</p>
+                </div>
+            </div>
+        </section>
+        <!-- Indicadores visuales -->
+        <section class="admin-indicadores">
+            <div class="indicador resumen">
+                <span class="indicador-titulo">Total registros</span>
+                <span class="indicador-num">{{ registros|length }}</span>
+            </div>
+            <div class="indicador pendiente">
+                <span class="indicador-titulo">Pendientes</span>
+                <span class="indicador-num">{{ registros.values()|selectattr('matricula', 'equalto', None)|list|length }}</span>
+            </div>
+            <div class="indicador validados">
+                <span class="indicador-titulo">Validados</span>
+                <span class="indicador-num">{{ registros.values()|selectattr('matricula')|list|length }}</span>
+            </div>
+        </section>
+        <!-- Buscador y filtro -->
+        <section class="admin-busqueda">
+            <form method="get" action="#" class="busqueda-form">
+                <input type="text" name="q" placeholder="Buscar por CURP, nombre o matrícula..." class="busqueda-input" />
+                <select name="estado" class="busqueda-select">
+                    <option value="">Todos</option>
+                    <option value="pendiente">Pendientes</option>
+                    <option value="validado">Validados</option>
+                    <option value="rechazado">Rechazados</option>
+                </select>
+                <button type="submit">🔍 Buscar</button>
+            </form>
+        </section>
+        <section class="admin-instrucciones">
+            <h2>¿Cómo funciona el panel?</h2>
+            <ol class="admin-lista">
+                <li>Revisa los datos y documentos de cada aspirante.</li>
+                <li>Aprueba o rechaza registros según los requisitos.</li>
+                <li>Valida o rechaza las fotos subidas por los estudiantes.</li>
+                <li>Utiliza la opción <b>Exportar PDF</b> o <b>Excel</b> para generar reportes.</li>
+                <li>Cierra sesión al terminar para proteger la información.</li>
+            </ol>
+            <div class="admin-alerta">
+                <span>⚠️</span> <b>Importante:</b> Solo los registros y fotos validados serán aceptados en el sistema.
+            </div>
+        </section>
+        <section class="content admin-content">
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul class="flash-messages">
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+            {% endwith %}
+
+            <h2>📋 Validar Datos</h2>
+            {% for curp, datos in registros.items() %}
+                {% if not datos['matricula'] %}
+                    <div class="tarjeta">
+                        <strong>{{ datos['nombre'] }} {{ datos['apellidos'] }}</strong> <br/>
+                        <small><strong>CURP:</strong> {{ curp }} | <strong>Correo:</strong> {{ datos['correo'] }}</small>
+                        {% if datos.curp_pdf %}
+                        <p><strong>📄 CURP:</strong> 
+        <a href="{{ url_for('documentos', filename=datos.curp_pdf) }}" target="_blank">Ver CURP</a>
+    </p>
+{% endif %}
+
+{% if datos.acta_pdf %}
+    <p><strong>📄 Acta de Nacimiento:</strong> 
+        <a href="{{ url_for('documentos', filename=datos.acta_pdf) }}" target="_blank">Ver Acta</a>
+    </p>
+{% endif %}
+
+                        <br/>
+                        <small><strong>Registrado:</strong> {{ datos['fecha'] }}</small>
+                        <div class="acciones">
+                            <form method="POST" action="{{ url_for('aprobar_registro') }}" style="display:inline;">
+                                <input type="hidden" name="curp" value="{{ curp }}" />
+                                <button type="submit">✅ Aprobar</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('rechazar_registro') }}" style="display:inline;">
+                                <input type="hidden" name="curp" value="{{ curp }}" />
+                                <button type="submit" style="background-color:red; color:white;">❌ Rechazar</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            <h2>📷 Validar Fotos</h2>
+            {% for curp, datos in registros.items() %}
+                {% if datos['matricula'] and datos['foto'] %}
+                    <div class="tarjeta">
+                        <strong>{{ datos['nombre'] }} {{ datos['apellidos'] }}</strong> ({{ curp }})<br/>
+                        <small><strong>Matrícula:</strong> {{ datos['matricula'] }}</small><br/>
+
+                        {% if datos['foto_validada'] == True %}
+                            <span class="validado">✅ Foto validada</span>
+                        {% elif datos['foto_validada'] == False %}
+                            <span class="rechazado">❌ Foto rechazada</span>
+                        {% else %}
+                            <span class="pendiente">⏳ Foto pendiente</span>
+                        {% endif %}
+
+                        <br/>
+                        <img src="{{ url_for('fotos', filename=datos['foto']) }}" class="foto" alt="Foto" />
+
+                        {% if datos['foto_validada'] is none %}
+                            <div class="acciones">
+                                <form method="POST" action="{{ url_for('validar_foto') }}" style="display:inline;">
+                                    <input type="hidden" name="curp" value="{{ curp }}" />
+                                    <button type="submit">✅ Validar Foto</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('rechazar_foto') }}" style="display:inline;">
+                                    <input type="hidden" name="curp" value="{{ curp }}" />
+                                    <button type="submit" style="background-color:red; color:white;">❌ Rechazar Foto</button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Universidad Politécnica de Tecámac</p>
+    </footer>
+    </body>
+    </html>

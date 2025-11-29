@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Acceso Administrador</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+<header class="navbar">
+      <img src="{{ url_for('static', filename='logo-uptecamac.png') }}" alt="Logo UPT" class="logo" />
+      <nav>
+        <ul>
+          <li><a href="{{ url_for('index') }}">Inicio</a></li>
+        </ul>
+      </nav>
+</header>
+
+<main>
+    <section class="content">
+        <h1>Iniciar sesión como Administrador</h1>
+        <form method="POST" action="{{ url_for('login') }}">
+            <input type="text" name="usuario" placeholder="Usuario" required />
+            <input type="password" name="password" placeholder="Contraseña" required />
+            <button type="submit">Ingresar</button>
+        </form>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul class="flash-messages">
+              {% for message in messages %}
+                <li style="color:red">{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+    </section>
+</main>
+
+<footer>
+    <p>&copy; 2025 Universidad Politécnica de Tecámac</p>
+</footer>
+</body>
+</html>
